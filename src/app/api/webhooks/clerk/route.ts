@@ -83,7 +83,6 @@ export async function POST(req: Request) {
       );
     }
   }
-
   console.log('Webhook processed successfully');
   return new Response('', { status: 200 });
 }

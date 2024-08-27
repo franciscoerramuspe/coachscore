@@ -5,7 +5,7 @@ export interface User {
   _id?: ObjectId;
   clerkId: string;
   email: string;
-  photoUrl: string;
+  photoUrl?: string;
   firstName?: string;
   lastName?: string;
   createdAt?: Date;
