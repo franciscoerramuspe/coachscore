@@ -1,12 +1,41 @@
-import prisma from '@/lib/prisma';
-import { User } from '@prisma/client';
+import { connect } from '@/lib/db';
+import { ObjectId } from 'mongodb';
 
-export async function createUser(data: User) {
+export interface User {
+  _id?: ObjectId;
+  clerkId: string;
+  email: string;
+  photoUrl: string;
+  firstName?: string;
+  lastName?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export async function createUser(
+  data: Omit<User, '_id' | 'createdAt' | 'updatedAt'>
+) {
   try {
-    const user = await prisma.user.create({ data });
-    return { user };
+    console.log('Intentando crear usuario en createUser:', data);
+    const db = await connect();
+    console.log('Conexión a la base de datos establecida');
+    const collection = db.collection('users');
+    const newUser = await collection.insertOne({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    console.log('Usuario insertado en la base de datos:', newUser);
+    if (newUser.insertedId) {
+      const createdUser = await collection.findOne({ _id: newUser.insertedId });
+      console.log('Usuario creado exitosamente:', createdUser);
+      return { user: createdUser };
+    } else {
+      throw new Error('No se pudo insertar el usuario');
+    }
   } catch (error) {
-    return { error };
+    console.error('Error al crear usuario:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -22,23 +51,35 @@ export async function getUserById({
       throw new Error('id or clerkUserId is required');
     }
 
-    const query = id ? { id } : { clerkUserId };
+    const db = await connect();
+    const collection = db.collection('users');
+    const query = id ? { _id: new ObjectId(id) } : { clerkId: clerkUserId };
 
-    const user = await prisma.user.findUnique({ where: query });
+    const user = await collection.findOne(query);
     return { user };
   } catch (error) {
+    console.error('Error al obtener usuario:', error);
     return { error };
   }
 }
 
 export async function UpdateUser(id: string, data: Partial<User>) {
   try {
-    const user = await prisma.user.update({
-      where: { id },
-      data,
-    });
-    return { user };
+    const db = await connect();
+    const collection = db.collection<User>('users');
+    const result = await collection.findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: { ...data, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+
+    if (!result) {
+      throw new Error('El usuario no se pudo actualizar');
+    }
+
+    return { user: result };
   } catch (error) {
-    return { error };
+    console.error('Error al actualizar usuario:', error);
+    return { error: error instanceof Error ? error.message : String(error) };
   }
 }
