@@ -15,5 +15,5 @@ export const connect = async () => {
       throw error;
     }
   }
-  return client.db(); // Devuelve la base de datos
+  return client.db();
 };
