@@ -1,7 +1,7 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
-import { clerkClient, WebhookEvent } from '@clerk/nextjs/server';
-import { createUser } from '@/lib/users';
+import { WebhookEvent } from '@clerk/nextjs/server';
+import { createUser, updateUser } from '@/lib/actions/user.action';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -38,6 +38,8 @@ export async function POST(req: Request) {
     return new Response('Error occurred', { status: 400 });
   }
 
+  // ... (código anterior sin cambios)
+
   if (evt.type === 'user.created') {
     const { id, email_addresses, image_url, first_name, last_name } = evt.data;
 
@@ -62,17 +64,47 @@ export async function POST(req: Request) {
         );
       }
 
-      if (!result.user) {
-        console.error('User creation failed: No user returned');
+      console.log('Usuario creado exitosamente en el webhook:', result.user);
+      return NextResponse.json({
+        message: 'User created',
+        user: result.user,
+      });
+    } catch (error) {
+      console.error('Error in webhook:', error);
+      return NextResponse.json(
+        { error: 'Internal server error', details: error },
+        { status: 500 }
+      );
+    }
+  } else if (evt.type === 'user.updated') {
+    const { id, email_addresses, image_url, first_name, last_name } = evt.data;
+
+    const userData = {
+      email: email_addresses[0].email_address,
+      photoUrl: image_url || undefined,
+      firstName: first_name || undefined,
+      lastName: last_name || undefined,
+    };
+
+    try {
+      console.log('Intentando actualizar usuario en el webhook:', id, userData);
+      const result = await updateUser(id, userData);
+      console.log('Resultado de updateUser:', result);
+
+      if (result.error) {
+        console.error('Error updating user:', result.error);
         return NextResponse.json(
-          { error: 'User creation failed', details: 'No user returned' },
+          { error: 'Failed to update user', details: result.error },
           { status: 500 }
         );
       }
 
-      console.log('Usuario creado exitosamente en el webhook:', result.user);
+      console.log(
+        'Usuario actualizado exitosamente en el webhook:',
+        result.user
+      );
       return NextResponse.json({
-        message: 'New user created',
+        message: 'User updated',
         user: result.user,
       });
     } catch (error) {
@@ -83,6 +115,7 @@ export async function POST(req: Request) {
       );
     }
   }
+
   console.log('Webhook processed successfully');
   return new Response('', { status: 200 });
 }
