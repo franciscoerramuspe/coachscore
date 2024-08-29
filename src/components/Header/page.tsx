@@ -1,6 +1,12 @@
 import Link from 'next/link'
-import { SignInButton, UserButton } from "@clerk/nextjs"
-import { auth } from '@clerk/nextjs/server';
+import { UserButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
+import { Poppins } from 'next/font/google'
+
+const font = Poppins({
+  subsets: ["latin"],
+  weight: ["600"]
+})
 
 const Header: React.FC = async () => {
   const { userId } = await auth();
@@ -8,7 +14,7 @@ const Header: React.FC = async () => {
   return (
     <header className="bg-gray-900 text-white py-4 px-6 shadow-lg">
       <div className="container mx-auto flex justify-between items-center">
-        <Link href="/pages/home" className="text-2xl font-bold text-yellow-400 hover:text-yellow-300 transition duration-300">
+        <Link href="/pages/home" className={`text-2xl font-bold text-yellow-400 hover:text-yellow-300 transition duration-300 ${font.className}`}>
           Rate My Coach
         </Link>
         

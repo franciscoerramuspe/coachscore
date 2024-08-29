@@ -73,3 +73,28 @@ body,
     @apply bg-background text-foreground;
   }
 }
+
+.slider-container {
+  overflow: hidden;
+  width: 100%;
+  padding: 20px 0;
+}
+
+.slider {
+  display: flex;
+  animation: slide 60s linear infinite;
+}
+
+.slide {
+  flex: 0 0 auto;
+  margin: 0 20px;
+}
+
+@keyframes slide {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}

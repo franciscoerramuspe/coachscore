@@ -1,0 +1,32 @@
+.sliderContainer {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    padding: 20px 0;
+    background: transparent; /* Cambiamos a transparente para que se vea el fondo de la página */
+}
+
+.slider {
+    display: flex;
+    animation: slide 30s linear infinite; /* Aumentamos la velocidad */
+}
+
+.slide {
+    flex: 0 0 auto;
+    margin: 0 20px;
+    transition: opacity 0.3s ease;
+}
+
+.slide img {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes slide {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
