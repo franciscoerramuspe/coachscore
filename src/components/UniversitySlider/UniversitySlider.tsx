@@ -47,17 +47,18 @@ const UniversitySlider: React.FC = () => {
     }, []);
 
     return (
-        <div className={`${styles.sliderContainer} bg-gradient-to-br from-indigo-900 via-blue-900 to-blue-800`} ref={sliderRef}>
-            <div className={styles.slider}>
+        <div className={`${styles.sliderContainer} h-full flex items-center`} ref={sliderRef}>
+            <div className={`${styles.slider} w-full`}>
                 {[...universities, ...universities, ...universities].map((uni, index) => (
-                    <div key={index} className={styles.slide}>
+                    <div key={index} className={`${styles.slide} flex items-center justify-center`}>
                         <Image 
                             src={uni.logo} 
                             alt={uni.name} 
-                            width={100} 
-                            height={100} 
+                            width={80}
+                            height={80}
                             priority={index < 5}
                             loading={index < 5 ? "eager" : "lazy"}
+                            className="object-contain"
                         />
                     </div>
                 ))}

@@ -2,13 +2,12 @@
     position: relative;
     overflow: hidden;
     width: 100%;
-    padding: 20px 0;
-    background: transparent; /* Cambiamos a transparente para que se vea el fondo de la página */
+    background: transparent;
 }
 
 .slider {
     display: flex;
-    animation: slide 30s linear infinite; /* Aumentamos la velocidad */
+    animation: slide 30s linear infinite;
 }
 
 .slide {
@@ -18,8 +17,10 @@
 }
 
 .slide img {
-    opacity: 0.5;
+    opacity: 0.7;
     transition: opacity 0.3s ease;
+    max-height: 80px; /* Ajusta este valor si es necesario */
+    width: auto;
 }
 
 @keyframes slide {
