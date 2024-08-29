@@ -1,7 +1,8 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { FaGraduationCap, FaUserTie, FaSearch } from 'react-icons/fa'
+import { FaGraduationCap, FaUserTie, FaSearch, FaPlus } from 'react-icons/fa'
 import { schools, coaches } from './mockData'
+import Link from 'next/link'
 
 const SearchPage: React.FC = () => {
   const [searchType, setSearchType] = useState<'school' | 'coach'>('school')
@@ -73,7 +74,7 @@ const SearchPage: React.FC = () => {
       <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">Find Your {searchType === 'school' ? 'School' : 'Coach'}</h1>
       
       <div className="relative bg-indigo-900 bg-opacity-50 rounded-lg p-6 shadow-lg">
-        <div className="flex items-center border-b border-gray-700 pb-2">
+        <div className="flex items-center border-b border-gray-700 pb-2 relative">
           <div className="relative" ref={dropdownRef}>
             <button 
               onClick={toggleDropdown}
@@ -124,6 +125,16 @@ const SearchPage: React.FC = () => {
           >
             <FaSearch />
           </button>
+          
+          {/* Nuevo botón condicional */}
+          {searchQuery && searchResults.length === 0 && (
+            <Link href={`/add-${searchType}`} className="absolute right-0 bottom-0 transform translate-y-full mt-2">
+              <button className="text-yellow-400 hover:text-yellow-300 font-bold py-2 px-4 rounded-full transition duration-300 flex items-center">
+                <FaPlus className="mr-2" />
+                Can&apos;t find your {searchType}?
+              </button>
+            </Link>
+          )}
         </div>
         
         {/* Resultados de búsqueda */}
