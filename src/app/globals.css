@@ -98,3 +98,7 @@ body,
     transform: translateX(-50%);
   }
 }
+
+.global-background {
+  @apply bg-gradient-to-br from-indigo-900 via-blue-900 to-blue-800;
+}

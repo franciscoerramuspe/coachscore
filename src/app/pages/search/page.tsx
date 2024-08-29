@@ -56,12 +56,12 @@ const SearchPage: React.FC = () => {
     <div className="max-w-4xl mx-auto py-12 px-4">
       <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">Find Your {searchType === 'school' ? 'School' : 'Coach'}</h1>
       
-      <div className="relative">
+      <div className="relative bg-indigo-900 bg-opacity-50 rounded-lg p-6 shadow-lg">
         <div className="flex items-center border-b border-gray-700 pb-2">
           <div className="relative" ref={dropdownRef}>
             <button 
               onClick={toggleDropdown}
-              className="flex items-center bg-gray-800 rounded-l-full px-4 py-2 text-gray-300 hover:bg-gray-700 transition duration-300"
+              className="flex items-center bg-indigo-800 rounded-l-full px-4 py-2 text-gray-300 hover:bg-indigo-700 transition duration-300"
             >
               {searchType === 'school' ? (
                 <>
@@ -77,16 +77,16 @@ const SearchPage: React.FC = () => {
               <span className="ml-2">▼</span>
             </button>
             {isDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-full bg-gray-800 rounded-md shadow-lg overflow-hidden z-10">
+              <div className="absolute top-full left-0 mt-1 w-full bg-indigo-800 rounded-md shadow-lg overflow-hidden z-10">
                 <button 
-                  className="w-full text-left px-4 py-2 hover:bg-gray-700 transition duration-300 flex items-center"
+                  className="w-full text-left px-4 py-2 hover:bg-indigo-700 transition duration-300 flex items-center"
                   onClick={() => handleSearchTypeChange('school')}
                 >
                   <FaGraduationCap className="mr-2" />
                   Schools
                 </button>
                 <button 
-                  className="w-full text-left px-4 py-2 hover:bg-gray-700 transition duration-300 flex items-center"
+                  className="w-full text-left px-4 py-2 hover:bg-indigo-700 transition duration-300 flex items-center"
                   onClick={() => handleSearchTypeChange('coach')}
                 >
                   <FaUserTie className="mr-2" />
@@ -97,35 +97,25 @@ const SearchPage: React.FC = () => {
           </div>
           <input
             type="text"
-            placeholder={`Search for ${searchType === 'school' ? 'a school' : 'a coach'}`}
-            value={searchQuery}
+            placeholder={`Search for a ${searchType}`}
+            className="flex-grow bg-transparent border-none focus:outline-none text-white placeholder-gray-400 px-4 py-2"
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-grow bg-transparent text-white pl-4 focus:outline-none"
           />
+          <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-r-full transition duration-300">
+            Search
+          </button>
+        </div>
+        
+        {/* Resultados de búsqueda */}
+        <div className="mt-6 space-y-4">
+          {searchResults.map((result) => (
+            <div key={result.id} className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow">
+              <h2 className="text-xl font-semibold text-white">{result.name}</h2>
+              {/* Añade más detalles según sea necesario */}
+            </div>
+          ))}
         </div>
       </div>
-        {searchResults.length > 0 && (
-            <ul className="mt-4 bg-gray-800 rounded-lg overflow-hidden">
-                {searchResults.map((result) => (
-                <li key={result.id} className="px-4 py-3 hover:bg-gray-700 transition duration-300">
-                    {searchType === 'school' ? (
-                    <a href="#" className="text-white">{result.name}</a>
-                    ) : (
-                    <a href={`/pages/coach/${result.id}`} className="text-white block">
-                        <span className="font-semibold">{result.name}</span>
-                        <span className="text-gray-400 ml-2">
-                        {result.schoolName} - {result.sportName}
-                        </span>
-                    </a>
-                    )}
-                </li>
-                ))}
-            </ul>
-        )}
-
-        {searchQuery && searchResults.length === 0 && (
-            <p className="mt-4 text-gray-400 text-center">No results found</p>
-        )}
     </div>
   )
 }

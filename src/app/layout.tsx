@@ -31,7 +31,7 @@ export default async function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${inter.className} bg-black text-white`}>
+      <body className={`${inter.className} bg-gradient-to-br from-indigo-950 via-blue-950 to-blue-900 min-h-screen`}>
           <Header />
           {children}
         </body>
