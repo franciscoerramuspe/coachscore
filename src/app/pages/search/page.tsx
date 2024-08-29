@@ -1,56 +1,72 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
-import { FaGraduationCap, FaUserTie } from 'react-icons/fa'
-import { schools, coaches, sports } from './mockData'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { FaGraduationCap, FaUserTie, FaSearch } from 'react-icons/fa'
+import { schools, coaches } from './mockData'
 
 const SearchPage: React.FC = () => {
-    const [searchType, setSearchType] = useState<'school' | 'coach'>('school')
-    const [searchQuery, setSearchQuery] = useState('')
-    const [searchResults, setSearchResults] = useState<any[]>([])
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-    const dropdownRef = useRef<HTMLDivElement>(null)
-  
-    useEffect(() => {
-      if (searchQuery.length > 0) {
-        if (searchType === 'school') {
-          const filteredSchools = schools.filter(school => 
-            school.name.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-          setSearchResults(filteredSchools)
-        } else {
-          const filteredCoaches = coaches.filter(coach => 
-            coach.name.toLowerCase().includes(searchQuery.toLowerCase())
-          ).map(coach => ({
-            ...coach,
-            schoolName: schools.find(school => school.id === coach.schoolId)?.name,
-            sportName: sports.find(sport => sport.id === coach.sportId)?.name
-          }))
-          setSearchResults(filteredCoaches)
-        }
-      } else {
-        setSearchResults([])
-      }
-    }, [searchQuery, searchType])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
+  const [searchType, setSearchType] = useState<'school' | 'coach'>('school')
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [displayedResults, setDisplayedResults] = useState<any[]>([])
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const resultsContainerRef = useRef<HTMLDivElement>(null)
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen)
 
   const handleSearchTypeChange = (type: 'school' | 'coach') => {
     setSearchType(type)
     setIsDropdownOpen(false)
+    setSearchQuery('')
+    setSearchResults([])
+    setDisplayedResults([])
   }
+
+  const handleSearch = useCallback(() => {
+    const data = searchType === 'school' ? schools : coaches
+    const results = data.filter(item => 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    setSearchResults(results)
+    setDisplayedResults(results.slice(0, 5))
+  }, [searchType, searchQuery])
+
+  useEffect(() => {
+    if (searchQuery.length > 0) {
+      handleSearch()
+    } else {
+      setSearchResults([])
+      setDisplayedResults([])
+    }
+  }, [searchQuery, handleSearch])
+
+  const loadMoreResults = useCallback(() => {
+    const currentLength = displayedResults.length
+    const nextResults = searchResults.slice(currentLength, currentLength + 5)
+    setDisplayedResults(prev => [...prev, ...nextResults])
+  }, [displayedResults, searchResults])
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (resultsContainerRef.current) {
+        const { scrollTop, scrollHeight, clientHeight } = resultsContainerRef.current
+        if (scrollTop + clientHeight >= scrollHeight - 20) {
+          loadMoreResults()
+        }
+      }
+    }
+
+    const resultsContainer = resultsContainerRef.current
+    if (resultsContainer) {
+      resultsContainer.addEventListener('scroll', handleScroll)
+    }
+
+    return () => {
+      if (resultsContainer) {
+        resultsContainer.removeEventListener('scroll', handleScroll)
+      }
+    }
+  }, [loadMoreResults])
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4">
@@ -99,21 +115,30 @@ const SearchPage: React.FC = () => {
             type="text"
             placeholder={`Search for a ${searchType}`}
             className="flex-grow bg-transparent border-none focus:outline-none text-white placeholder-gray-400 px-4 py-2"
+            value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-r-full transition duration-300">
-            Search
+          <button 
+            className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-r-full transition duration-300"
+            onClick={handleSearch}
+          >
+            <FaSearch />
           </button>
         </div>
         
         {/* Resultados de búsqueda */}
-        <div className="mt-6 space-y-4">
-          {searchResults.map((result) => (
+        <div 
+          ref={resultsContainerRef}
+          className="mt-6 space-y-4 max-h-96 overflow-y-auto"
+        >
+          {displayedResults.map((result) => (
             <div key={result.id} className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow">
               <h2 className="text-xl font-semibold text-white">{result.name}</h2>
-              {/* Añade más detalles según sea necesario */}
             </div>
           ))}
+          {displayedResults.length < searchResults.length && (
+            <p className="text-center text-gray-400">Scroll para ver más resultados</p>
+          )}
         </div>
       </div>
     </div>
