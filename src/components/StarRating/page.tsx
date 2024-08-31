@@ -7,7 +7,8 @@ import styled from '@emotion/styled';
 interface StarRatingProps {
   totalStars?: number;
   initialRating?: number;
-  onRatingChange: (rating: number) => void;
+  onRatingChange?: (rating: number) => void;
+  readOnly?: boolean;
 }
 
 const StyledRating = styled(Rating)`
@@ -22,14 +23,19 @@ const StyledRating = styled(Rating)`
   }
 ` as typeof Rating;
 
-const StarRating: React.FC<StarRatingProps> = ({ totalStars = 5, initialRating = 0, onRatingChange }) => {
+const StarRating: React.FC<StarRatingProps> = ({ 
+  totalStars = 5, 
+  initialRating = 0, 
+  onRatingChange, 
+  readOnly = false 
+}) => {
   const [rating, setRating] = useState(initialRating);
   const [hover, setHover] = useState(-1);
 
   const handleRatingChange = (event: React.SyntheticEvent, newValue: number | null) => {
-    if (newValue !== null) {
+    if (newValue !== null && !readOnly) {
       setRating(newValue);
-      onRatingChange(newValue);
+      onRatingChange?.(newValue);
     }
   };
 
@@ -42,12 +48,15 @@ const StarRating: React.FC<StarRatingProps> = ({ totalStars = 5, initialRating =
         max={totalStars}
         onChange={handleRatingChange}
         onChangeActive={(event, newHover) => {
-          setHover(newHover);
+          if (!readOnly) setHover(newHover);
         }}
+        readOnly={readOnly}
       />
-      <span className="ml-2 text-gray-300">
-        {(hover !== -1 ? hover : rating).toFixed(1)}
-      </span>
+      {!readOnly && (
+        <span className="ml-2 text-gray-300">
+          {(hover !== -1 ? hover : rating).toFixed(1)}
+        </span>
+      )}
     </div>
   );
 };

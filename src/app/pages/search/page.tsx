@@ -23,29 +23,41 @@ const SearchPage: React.FC = () => {
     setDisplayedResults([])
   }
 
-  const handleSearch = useCallback(() => {
-    const data = searchType === 'school' ? schools : coaches
-    const results = data.filter(item => 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    setSearchResults(results)
-    setDisplayedResults(results.slice(0, 5))
-  }, [searchType, searchQuery])
-
-  useEffect(() => {
+  const handleSearch = useCallback(async () => {
     if (searchQuery.length > 0) {
-      handleSearch()
+      try {
+        const response = await fetch(`/api/coaches/search?q=${searchQuery}&limit=5&offset=0`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch coaches')
+        }
+        const data = await response.json()
+        setSearchResults(data.coaches)
+        setDisplayedResults(data.coaches)
+      } catch (error) {
+        console.error('Error fetching coaches:', error)
+      }
     } else {
       setSearchResults([])
       setDisplayedResults([])
     }
+  }, [searchQuery])
+
+  useEffect(() => {
+    handleSearch()
   }, [searchQuery, handleSearch])
 
-  const loadMoreResults = useCallback(() => {
-    const currentLength = displayedResults.length
-    const nextResults = searchResults.slice(currentLength, currentLength + 5)
-    setDisplayedResults(prev => [...prev, ...nextResults])
-  }, [displayedResults, searchResults])
+  const loadMoreResults = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/coaches/search?q=${searchQuery}&limit=5&offset=${displayedResults.length}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch more coaches')
+      }
+      const data = await response.json()
+      setDisplayedResults(prev => [...prev, ...data.coaches])
+    } catch (error) {
+      console.error('Error fetching more coaches:', error)
+    }
+  }, [searchQuery, displayedResults.length])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -142,13 +154,21 @@ const SearchPage: React.FC = () => {
           ref={resultsContainerRef}
           className="mt-6 space-y-4 max-h-96 overflow-y-auto"
         >
-          {displayedResults.map((result) => (
-            <div key={result.id} className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow">
-              <h2 className="text-xl font-semibold text-white">{result.name}</h2>
-            </div>
+          {displayedResults.map((coach) => (
+            <Link key={coach.coachId} href={`/pages/coach/${coach.coachId}`}>
+              <div className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300">
+                <h2 className="text-xl font-semibold text-white">{`${coach.coachFirstName} ${coach.coachLastName}`}</h2>
+                <p className="text-gray-300">{`School: ${coach.schoolId}, Sport: ${coach.sportId}`}</p>
+              </div>
+            </Link>
           ))}
           {displayedResults.length < searchResults.length && (
-            <p className="text-center text-gray-400">Scroll para ver más resultados</p>
+            <button 
+              onClick={loadMoreResults}
+              className="w-full text-center text-yellow-400 hover:text-yellow-300 transition duration-300"
+            >
+              Load More
+            </button>
           )}
         </div>
       </div>

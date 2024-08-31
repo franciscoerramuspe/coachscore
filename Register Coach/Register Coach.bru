@@ -1,0 +1,20 @@
+meta {
+  name: Register Coach
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:3000/api/coaches
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "coachFirstName": "John",
+    "coachLastName": "Doe",
+    "school": "Test University",
+    "sport": "Basketball"
+  }
+}

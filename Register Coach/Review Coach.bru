@@ -1,0 +1,20 @@
+meta {
+  name: Review Coach
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:3000/api/reviews
+  body: json
+  auth: none
+}
+
+body:json {
+    {
+       "coachId": "bfea5d99-0ece-455d-ab8b-ced15430e51a",
+       "rating": 4,
+       "comment": "Great coach!",
+       "reviewerId": "user123"
+     }
+}

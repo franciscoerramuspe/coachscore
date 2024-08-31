@@ -5,6 +5,8 @@ import StarRating from '../../../components/StarRating/page'
 import { schools, sports, coaches } from './mockData'
 import { FaGraduationCap, FaUserTie, FaSearch, FaPlus } from 'react-icons/fa'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@clerk/nextjs'
 
 const RatePage: React.FC = () => {
   const [searchType, setSearchType] = useState<'school' | 'coach'>('school')
@@ -16,7 +18,10 @@ const RatePage: React.FC = () => {
   const [selectedCoach, setSelectedCoach] = useState('')
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const router = useRouter()
+  const { userId } = useAuth()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsContainerRef = useRef<HTMLDivElement>(null)
 
@@ -36,13 +41,32 @@ const RatePage: React.FC = () => {
     setSelectedCoach('')
   }
 
-  const handleSearch = useCallback(() => {
-    const data = searchType === 'school' ? schools : coaches
-    const results = data.filter(item => 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    setSearchResults(results)
-    setDisplayedResults(results.slice(0, 5))
+  const handleSearch = useCallback(async () => {
+    if (searchType === 'school') {
+      try {
+        const response = await fetch(`/api/schools/search?q=${searchQuery}&limit=5&offset=0`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch schools')
+        }
+        const data = await response.json()
+        setSearchResults(data.schools)
+        setDisplayedResults(data.schools)
+      } catch (error) {
+        console.error('Error fetching schools:', error)
+      }
+    } else {
+      try {
+        const response = await fetch(`/api/coaches/search?q=${searchQuery}&limit=5&offset=0`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch coaches')
+        }
+        const data = await response.json()
+        setSearchResults(data.coaches)
+        setDisplayedResults(data.coaches)
+      } catch (error) {
+        console.error('Error fetching coaches:', error)
+      }
+    }
   }, [searchType, searchQuery])
 
   useEffect(() => {
@@ -54,11 +78,31 @@ const RatePage: React.FC = () => {
     }
   }, [searchQuery, handleSearch])
 
-  const loadMoreResults = useCallback(() => {
-    const currentLength = displayedResults.length
-    const nextResults = searchResults.slice(currentLength, currentLength + 5)
-    setDisplayedResults(prev => [...prev, ...nextResults])
-  }, [displayedResults, searchResults])
+  const loadMoreResults = useCallback(async () => {
+    if (searchType === 'school') {
+      try {
+        const response = await fetch(`/api/schools/search?q=${searchQuery}&limit=5&offset=${displayedResults.length}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch more schools')
+        }
+        const data = await response.json()
+        setDisplayedResults(prev => [...prev, ...data.schools])
+      } catch (error) {
+        console.error('Error fetching more schools:', error)
+      }
+    } else {
+      try {
+        const response = await fetch(`/api/coaches/search?q=${searchQuery}&limit=5&offset=${displayedResults.length}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch more coaches')
+        }
+        const data = await response.json()
+        setDisplayedResults(prev => [...prev, ...data.coaches])
+      } catch (error) {
+        console.error('Error fetching more coaches:', error)
+      }
+    }
+  }, [searchType, searchQuery, displayedResults.length])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -82,36 +126,48 @@ const RatePage: React.FC = () => {
     }
   }, [loadMoreResults])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Implement rating submission logic here
-    console.log('Submitting rating:', { selectedSchool, selectedCoach, rating, comment })
-    setIsSubmitted(true)
-    
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false)
-      setSelectedSchool('')
-      setSelectedCoach('')
-      setRating(0)
-      setComment('')
-    }, 3000)
+    if (!userId) {
+      setSubmitError('You must be logged in to submit a review')
+      return
+    }
+    if (!selectedCoach || rating === 0) {
+      setSubmitError('Please select a coach and provide a rating')
+      return
+    }
+    setIsSubmitting(true)
+    setSubmitError('')
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          coachId: selectedCoach,
+          rating,
+          comment,
+          reviewerId: userId
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to submit review')
+      }
+
+      const data = await response.json()
+      router.push(`/pages/coach/${selectedCoach}`)
+    } catch (err) {
+      setSubmitError('An error occurred while submitting the review. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleRatingChange = (newRating: number) => {
     setRating(newRating)
-  }
-
-  if (isSubmitted) {
-    return (
-      <div className="max-w-2xl mx-auto py-12 text-center">
-        <div className="text-6xl mb-4">
-          <span className="text-yellow-400">✅</span>
-        </div>
-        <h2 className="text-2xl font-bold text-yellow-400 mb-4">Thank you for your rating!</h2>
-        <p className="text-gray-300">Your feedback has been successfully submitted.</p>
-      </div>
-    )
   }
 
   return (
@@ -217,18 +273,23 @@ const RatePage: React.FC = () => {
                 </div>
               ))}
               {displayedResults.length < searchResults.length && (
-                <p className="text-center text-gray-400">Scroll para ver más resultados</p>
+                <button 
+                  onClick={loadMoreResults}
+                  className="w-full text-center text-yellow-400 hover:text-yellow-300 transition duration-300"
+                >
+                  Load More
+                </button>
               )}
             </div>
           </div>
 
           {selectedCoach && (
-            <>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   Rating
                 </label>
-                <StarRating onRatingChange={handleRatingChange} initialRating={rating} />
+                <StarRating onRatingChange={setRating} initialRating={rating} />
               </div>
               
               <div>
@@ -245,13 +306,16 @@ const RatePage: React.FC = () => {
                 ></textarea>
               </div>
               
+              {submitError && <p className="text-red-500">{submitError}</p>}
+              
               <button
                 type="submit"
                 className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105"
+                disabled={isSubmitting}
               >
-                Submit Rating
+                {isSubmitting ? 'Submitting...' : 'Submit Review'}
               </button>
-            </>
+            </form>
           )}
         </form>
       </div>

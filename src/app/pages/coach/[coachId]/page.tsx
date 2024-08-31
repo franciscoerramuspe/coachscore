@@ -1,89 +1,84 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { coaches, schools, sports } from '../../search/mockData'
-import AverageRatingDisplay from '../../../../components/AverageRatingDisplay/page'
-import { FaStar, FaStarHalfAlt, FaRegStar } from 'react-icons/fa'
+import StarRating from '@/components/StarRating/page'
 
-const mockReviews = [
-  { id: 1, rating: 4.5, comment: "Great coach, really helped improve my technique." },
-  { id: 2, rating: 5, comment: "Amazing mentor, both on and off the field." },
-  { id: 3, rating: 3.5, comment: "Good knowledge, but could improve communication." },
-];
-
-interface CoachPageProps {
-  params: {
-    coachId: string
-  }
+interface Review {
+  reviewId: string
+  rating: number
+  comment: string
+  createdAt: string
 }
 
-const CoachPage: React.FC<CoachPageProps> = ({ params }) => {
-  const { coachId } = params
-  const [coach, setCoach] = useState<any | null>(null)
-  const [averageRating, setAverageRating] = useState(0)
+interface Coach {
+  coachId: string
+  coachFirstName: string
+  coachLastName: string
+  schoolId: string
+  sportId: string
+  ratings: Review[]
+}
+
+export default function CoachPage({ params }: { params: { coachId: string } }) {
+  const [coach, setCoach] = useState<Coach | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    if (coachId) {
-      const coachData = coaches.find(c => c.id === Number(coachId))
-      if (coachData) {
-        const school = schools.find(s => s.id === coachData.schoolId)
-        const sport = sports.find(s => s.id === coachData.sportId)
-        setCoach({ ...coachData, schoolName: school?.name, sportName: sport?.name })
-        
-        // Calculate average rating
-        const avgRating = mockReviews.reduce((sum, review) => sum + review.rating, 0) / mockReviews.length
-        setAverageRating(avgRating)
+    const fetchCoachDetails = async () => {
+      try {
+        const response = await fetch(`/api/coaches/${params.coachId}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch coach details')
+        }
+        const data = await response.json()
+        setCoach(data)
+      } catch (err) {
+        setError('An error occurred while fetching coach details')
+        console.error(err)
+      } finally {
+        setIsLoading(false)
       }
     }
-  }, [coachId])
 
-  if (!coach) {
-    return <div className="text-center mt-8">Loading...</div>
-  }
+    fetchCoachDetails()
+  }, [params.coachId])
 
-  const DisplayStars: React.FC<{ rating: number }> = ({ rating }) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-  
-    return (
-      <div className="flex">
-        {[...Array(5)].map((_, index) => {
-          if (index < fullStars) {
-            return <FaStar key={index} className="text-yellow-400" />;
-          } else if (index === fullStars && hasHalfStar) {
-            return <FaStarHalfAlt key={index} className="text-yellow-400" />;
-          } else {
-            return <FaRegStar key={index} className="text-yellow-400" />;
-          }
-        })}
-      </div>
-    );
-  };
+  if (isLoading) return <div className="text-center text-white">Loading...</div>
+  if (error) return <div className="text-center text-red-500">{error}</div>
+  if (!coach) return <div className="text-center text-white">Coach not found</div>
+
+  const averageRating = coach.ratings.length > 0
+    ? coach.ratings.reduce((sum, review) => sum + review.rating, 0) / coach.ratings.length
+    : 0
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 relative">
-      <div className="absolute top-4 right-4">
-        <AverageRatingDisplay rating={averageRating} />
+    <div className="max-w-4xl mx-auto py-12 px-4">
+      <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">{`${coach.coachFirstName} ${coach.coachLastName}`}</h1>
+      <div className="bg-indigo-900 bg-opacity-50 rounded-lg p-6 shadow-lg mb-8">
+        <p className="text-white mb-2"><span className="font-bold">School:</span> {coach.schoolId}</p>
+        <p className="text-white mb-4"><span className="font-bold">Sport:</span> {coach.sportId}</p>
+        <div className="flex items-center mb-2">
+          <StarRating initialRating={averageRating} readOnly />
+          <span className="text-white ml-2">({averageRating.toFixed(1)})</span>
+        </div>
       </div>
-      <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">{coach.name}</h1>
-      <div className="mb-8 text-center text-gray-300">
-        <p>{coach.schoolName}</p>
-        <p>{coach.sportName}</p>
-      </div>
-
-      <h2 className="text-2xl font-semibold mb-4 text-white">Reviews</h2>
-      <div className="space-y-4">
-        {mockReviews.map(review => (
-          <div key={review.id} className="bg-gray-800 p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <DisplayStars rating={review.rating} />
-              <span className="ml-2 text-yellow-400">{review.rating.toFixed(1)}</span>
+      <h2 className="text-2xl font-bold mb-4 text-white">Reviews</h2>
+      {coach.ratings.length === 0 ? (
+        <p className="text-gray-300">No reviews yet.</p>
+      ) : (
+        <div className="space-y-4">
+          {coach.ratings.map((review) => (
+            <div key={review.reviewId} className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow">
+              <div className="flex items-center mb-2">
+                <StarRating initialRating={review.rating} readOnly />
+                <span className="text-white ml-2">({review.rating})</span>
+              </div>
+              <p className="text-white">{review.comment}</p>
+              <p className="text-gray-400 text-sm mt-2">{new Date(review.createdAt).toLocaleDateString()}</p>
             </div>
-            <p className="text-white">{review.comment}</p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
-
-export default CoachPage
