@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import StarRating from '../../../components/StarRating/page'
-import { FaGraduationCap, FaUserTie, FaSearch, FaPlus } from 'react-icons/fa'
+import { FaGraduationCap, FaUserTie, FaSearch } from 'react-icons/fa'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
@@ -19,18 +19,15 @@ const RatePage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const router = useRouter()
   const { userId } = useAuth()
   const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsContainerRef = useRef<HTMLDivElement>(null)
 
-  const toggleDropdown = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsDropdownOpen(!isDropdownOpen)
-  }
+  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen)
 
-  const handleSearchTypeChange = (e: React.MouseEvent, type: 'school' | 'coach') => {
-    e.preventDefault()
+  const handleSearchTypeChange = (type: 'school' | 'coach') => {
     setSearchType(type)
     setIsDropdownOpen(false)
     setSearchQuery('')
@@ -41,60 +38,45 @@ const RatePage: React.FC = () => {
   }
 
   const handleSearch = useCallback(async () => {
-    if (searchQuery.length > 0) {
-      try {
-        setIsLoading(true);
-        const endpoint = searchType === 'school' ? '/api/schools/search' : '/api/coaches/search';
-        const response = await fetch(`${endpoint}?q=${searchQuery}&limit=5&offset=0`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log('API response:', data);
-        if (Array.isArray(data.schools) || Array.isArray(data.coaches)) {
-          const results = data.schools || data.coaches || [];
-          setSearchResults(results);
-          setDisplayedResults(results);
-        } else {
-          console.error('Unexpected API response format:', data);
-          setSearchResults([]);
-          setDisplayedResults([]);
-        }
-      } catch (error) {
-        console.error(`Error fetching ${searchType}s:`, error);
-        setSearchResults([]);
-        setDisplayedResults([]);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setSearchResults([]);
-      setDisplayedResults([]);
+    if (searchQuery.length === 0) {
+      setSearchResults([])
+      setDisplayedResults([])
+      return
     }
-  }, [searchType, searchQuery]);
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const endpoint = searchType === 'school' ? '/api/schools/search' : '/api/coaches/search'
+      const response = await fetch(`${endpoint}?q=${searchQuery}&limit=5&offset=0`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${searchType}s`)
+      }
+      const data = await response.json()
+      console.log('API response:', data)
+      if (Array.isArray(data.coaches) || Array.isArray(data.schools)) {
+        const results = data.coaches || data.schools || []
+        setSearchResults(results)
+        setDisplayedResults(results)
+      } else {
+        setError(`No se encontraron ${searchType}s`)
+      }
+    } catch (error) {
+      console.error(`Error fetching ${searchType}s:`, error)
+      setError(`Failed to fetch ${searchType}s. Please try again.`)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [searchType, searchQuery])
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (resultsContainerRef.current) {
-        const { scrollTop, scrollHeight, clientHeight } = resultsContainerRef.current
-        if (scrollTop + clientHeight >= scrollHeight - 20) {
-          // Load more results when scrolled to bottom
-          // Implement loadMoreResults function if needed
-        }
-      }
-    }
+    const timer = setTimeout(() => {
+      handleSearch()
+    }, 300) // Debounce de 300ms
 
-    const resultsContainer = resultsContainerRef.current
-    if (resultsContainer) {
-      resultsContainer.addEventListener('scroll', handleScroll)
-    }
-
-    return () => {
-      if (resultsContainer) {
-        resultsContainer.removeEventListener('scroll', handleScroll)
-      }
-    }
-  }, [])
+    return () => clearTimeout(timer)
+  }, [searchQuery, handleSearch])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -155,13 +137,13 @@ const RatePage: React.FC = () => {
               <div className="absolute top-full left-0 mt-1 w-full bg-indigo-800 rounded-md shadow-lg overflow-hidden z-10">
                 <button 
                   className="w-full text-left px-4 py-2 hover:bg-indigo-700 transition duration-300 flex items-center"
-                  onClick={(e) => handleSearchTypeChange(e, 'school')}
+                  onClick={() => handleSearchTypeChange('school')}
                 >
                   <FaGraduationCap className="mr-2" /> Schools
                 </button>
                 <button 
                   className="w-full text-left px-4 py-2 hover:bg-indigo-700 transition duration-300 flex items-center"
-                  onClick={(e) => handleSearchTypeChange(e, 'coach')}
+                  onClick={() => handleSearchTypeChange('coach')}
                 >
                   <FaUserTie className="mr-2" /> Coaches
                 </button>
@@ -176,7 +158,7 @@ const RatePage: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <button 
-            onClick={() => handleSearch()}
+            onClick={handleSearch}
             className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-r-full transition duration-300"
           >
             <FaSearch />
@@ -184,23 +166,32 @@ const RatePage: React.FC = () => {
         </div>
         
         {isLoading && <p className="text-white">Loading...</p>}
+        {error && <p className="text-red-500">{error}</p>}
         
         <div ref={resultsContainerRef} className="mt-4 space-y-4 max-h-96 overflow-y-auto">
           {displayedResults.map((result) => (
             <div 
-              key={result.id} 
+              key={result.id || result.coachId || result.schoolId} 
               className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300"
               onClick={() => {
                 if (searchType === 'school') {
-                  setSelectedSchool(result.id)
+                  setSelectedSchool(result.id || result.schoolId)
                   setSearchType('coach')
                   setSearchQuery('')
                 } else {
-                  setSelectedCoach(result.id)
+                  setSelectedCoach(result.id || result.coachId)
                 }
               }}
             >
-              <h2 className="text-xl font-semibold text-white">{result.name}</h2>
+              <h2 className="text-xl font-semibold text-white">
+                {searchType === 'coach' 
+                  ? `${result.coachFirstName} ${result.coachLastName}`
+                  : result.name
+                }
+              </h2>
+              {searchType === 'coach' && (
+                <p className="text-gray-300">{`School: ${result.schoolId}, Sport: ${result.sportId}`}</p>
+              )}
             </div>
           ))}
         </div>

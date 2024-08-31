@@ -108,14 +108,19 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
     : 0
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">{`${coach.coachFirstName} ${coach.coachLastName}`}</h1>
-      <div className="bg-indigo-900 bg-opacity-50 rounded-lg p-6 shadow-lg mb-8">
+    <div className="max-w-4xl mx-auto py-12 px-4 bg-indigo-950 !important">
+    <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">{`${coach.coachFirstName} ${coach.coachLastName}`}</h1>
+    <div className="bg-indigo-900 bg-opacity-50 rounded-lg p-6 shadow-lg mb-8">
         <p className="text-white mb-2"><span className="font-bold">School:</span> {coach.schoolId}</p>
         <p className="text-white mb-4"><span className="font-bold">Sport:</span> {coach.sportId}</p>
-        <div className="flex items-center mb-2">
-          <StarRating initialRating={averageRating} readOnly={true} />
-          <span className="text-white ml-2">({averageRating.toFixed(1)})</span>
+        <div className="flex items-center justify-between bg-indigo-800 bg-opacity-50 rounded-lg p-4">
+          <span className="text-lg font-semibold text-yellow-400">Average Rating:</span>
+          <div className="flex items-center">
+            <StarRating initialRating={averageRating} readOnly={true} />
+            <span className="text-white ml-2 text-lg font-bold">
+              {averageRating.toFixed(1)}
+            </span>
+          </div>
         </div>
       </div>
       <h2 className="text-2xl font-bold mb-4 text-white">Reviews</h2>
@@ -135,31 +140,33 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
           ))}
         </div>
       )}
-      <h2 className="text-2xl font-bold mb-4 text-white">Añadir una reseña</h2>
-      <form onSubmit={handleSubmit} className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow mb-8">
-        <div className="mb-4">
-          <label htmlFor="rating" className="block text-white mb-2">Calificación</label>
+      <div className="mt-8 bg-indigo-900 bg-opacity-50 rounded-lg p-6 shadow-lg">
+      <h2 className="text-2xl font-bold mb-4 text-yellow-400">Add a Review</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="rating" className="block text-yellow-400 mb-2 font-semibold">Rating</label>
           <StarRating initialRating={rating} onRatingChange={setRating} />
         </div>
-        <div className="mb-4">
-          <label htmlFor="comment" className="block text-white mb-2">Comentario</label>
+        <div>
+          <label htmlFor="comment" className="block text-yellow-400 mb-2 font-semibold">Comment</label>
           <textarea
             id="comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none"
+            className="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
             rows={4}
           ></textarea>
         </div>
         {submitError && <p className="text-red-500 mb-4">{submitError}</p>}
         <button
           type="submit"
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-4 rounded"
+          className="bg-yellow-400 hover:bg-yellow-500 text-indigo-900 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Submitting...' : 'Send Review'}
+          {isSubmitting ? 'Submitting...' : 'Submit Review'}
         </button>
       </form>
     </div>
+  </div>
   )
 }
