@@ -1,15 +1,16 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { FaGraduationCap, FaUserTie, FaSearch, FaPlus } from 'react-icons/fa'
-import { schools, coaches } from './mockData'
 import Link from 'next/link'
 
 const SearchPage: React.FC = () => {
-  const [searchType, setSearchType] = useState<'school' | 'coach'>('school')
+  const [searchType, setSearchType] = useState<'school' | 'coach'>('coach')
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [displayedResults, setDisplayedResults] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsContainerRef = useRef<HTMLDivElement>(null)
 
@@ -24,40 +25,66 @@ const SearchPage: React.FC = () => {
   }
 
   const handleSearch = useCallback(async () => {
-    if (searchQuery.length > 0) {
-      try {
-        const response = await fetch(`/api/coaches/search?q=${searchQuery}&limit=5&offset=0`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch coaches')
-        }
-        const data = await response.json()
-        setSearchResults(data.coaches)
-        setDisplayedResults(data.coaches)
-      } catch (error) {
-        console.error('Error fetching coaches:', error)
-      }
-    } else {
+    if (searchQuery.length === 0) {
       setSearchResults([])
       setDisplayedResults([])
+      return
     }
-  }, [searchQuery])
+
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const endpoint = searchType === 'school' ? '/api/schools/search' : '/api/coaches/search'
+      const response = await fetch(`${endpoint}?q=${searchQuery}&limit=5&offset=0`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${searchType}s`)
+      }
+      const data = await response.json()
+      console.log('API response:', data)
+      if (Array.isArray(data.coaches) || Array.isArray(data.schools)) {
+        const results = data.coaches || data.schools || []
+        setSearchResults(results)
+        setDisplayedResults(results)
+      } else {
+        setError(`No se encontraron ${searchType}s`)
+      }
+    } catch (error) {
+      console.error(`Error fetching ${searchType}s:`, error)
+      setError(`Failed to fetch ${searchType}s. Please try again.`)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [searchType, searchQuery])
 
   useEffect(() => {
-    handleSearch()
+    const timer = setTimeout(() => {
+      handleSearch()
+    }, 300) // Debounce de 300ms
+
+    return () => clearTimeout(timer)
   }, [searchQuery, handleSearch])
 
   const loadMoreResults = useCallback(async () => {
+    if (isLoading || displayedResults.length >= searchResults.length) return
+
+    setIsLoading(true)
     try {
-      const response = await fetch(`/api/coaches/search?q=${searchQuery}&limit=5&offset=${displayedResults.length}`)
+      const endpoint = searchType === 'school' ? '/api/schools/search' : '/api/coaches/search'
+      const response = await fetch(`${endpoint}?q=${searchQuery}&limit=5&offset=${displayedResults.length}`)
       if (!response.ok) {
-        throw new Error('Failed to fetch more coaches')
+        throw new Error(`Failed to fetch more ${searchType}s`)
       }
       const data = await response.json()
-      setDisplayedResults(prev => [...prev, ...data.coaches])
+      console.log('Load more response:', data)
+      setDisplayedResults(prev => [...prev, ...(data[`${searchType}s`] || [])])
     } catch (error) {
-      console.error('Error fetching more coaches:', error)
+      console.error(`Error fetching more ${searchType}s:`, error)
+      setError(`Failed to load more ${searchType}s. Please try again.`)
+    } finally {
+      setIsLoading(false)
     }
-  }, [searchQuery, displayedResults.length])
+  }, [searchType, searchQuery, displayedResults.length, searchResults.length, isLoading])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -137,40 +164,44 @@ const SearchPage: React.FC = () => {
           >
             <FaSearch />
           </button>
-          
-          {/* Nuevo botón condicional */}
-          {searchQuery && searchResults.length === 0 && (
-            <Link href={`/add-${searchType}`} className="absolute right-0 bottom-0 transform translate-y-full mt-2">
-              <button className="text-yellow-400 hover:text-yellow-300 font-bold py-2 px-4 rounded-full transition duration-300 flex items-center">
-                <FaPlus className="mr-2" />
-                Can&apos;t find your {searchType}?
-              </button>
-            </Link>
-          )}
         </div>
         
-        {/* Resultados de búsqueda */}
-        <div 
-          ref={resultsContainerRef}
-          className="mt-6 space-y-4 max-h-96 overflow-y-auto"
-        >
-          {displayedResults.map((coach) => (
-            <Link key={coach.coachId} href={`/pages/coach/${coach.coachId}`}>
-              <div className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300">
-                <h2 className="text-xl font-semibold text-white">{`${coach.coachFirstName} ${coach.coachLastName}`}</h2>
-                <p className="text-gray-300">{`School: ${coach.schoolId}, Sport: ${coach.sportId}`}</p>
-              </div>
+        {error && <p className="text-red-500 mt-2">{error}</p>}
+        
+        {isLoading && <p className="text-white mt-4">Loading...</p>}
+        
+        {!isLoading && displayedResults.length > 0 && (
+          <div 
+            ref={resultsContainerRef}
+            className="mt-6 space-y-4 max-h-96 overflow-y-auto"
+          >
+            {displayedResults.map((result) => (
+              <Link key={result.coachId || result.schoolId} href={`/pages/${searchType}/${result.coachId || result.schoolId}`}>
+                <div className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300">
+                  <h2 className="text-xl font-semibold text-white">
+                    {searchType === 'coach' 
+                      ? `${result.coachFirstName} ${result.coachLastName}`
+                      : result.name
+                    }
+                  </h2>
+                  {searchType === 'coach' && (
+                    <p className="text-gray-300">{`School: ${result.schoolId}, Sport: ${result.sportId}`}</p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {!isLoading && searchQuery && searchResults.length === 0 && (
+          <div className="mt-4">
+            <p className="text-white">No results found.</p>
+            <Link href={`/pages/add-${searchType}`} className="text-yellow-400 hover:text-yellow-300 mt-2 inline-block">
+              <FaPlus className="inline mr-2" />
+              Can&apos;t find your {searchType}? Add a new one
             </Link>
-          ))}
-          {displayedResults.length < searchResults.length && (
-            <button 
-              onClick={loadMoreResults}
-              className="w-full text-center text-yellow-400 hover:text-yellow-300 transition duration-300"
-            >
-              Load More
-            </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

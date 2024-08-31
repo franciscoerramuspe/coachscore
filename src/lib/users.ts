@@ -1,5 +1,6 @@
 import { connect } from '@/lib/db';
 import { ObjectId } from 'mongodb';
+import { MongoClient, Db, Collection } from 'mongodb';
 
 export interface User {
   _id?: ObjectId;
@@ -63,23 +64,23 @@ export async function getUserById({
   }
 }
 
-export async function UpdateUser(id: string, data: Partial<User>) {
+export async function updateUser(id: string, data: Partial<User>) {
   try {
     const db = await connect();
-    const collection = db.collection<User>('users');
+    const collection = db.collection('users');
     const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(id) },
+      { clerkId: id },
       { $set: { ...data, updatedAt: new Date() } },
       { returnDocument: 'after' }
     );
 
-    if (!result) {
-      throw new Error('El usuario no se pudo actualizar');
+    if (!result.value) {
+      throw new Error('User not found');
     }
 
-    return { user: result };
+    return { user: result.value };
   } catch (error) {
-    console.error('Error al actualizar usuario:', error);
+    console.error('Error updating user:', error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 }
