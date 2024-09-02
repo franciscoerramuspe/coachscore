@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import StarRating from '../../../components/StarRating/page'
 import { FaGraduationCap, FaUserTie, FaSearch } from 'react-icons/fa'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 
