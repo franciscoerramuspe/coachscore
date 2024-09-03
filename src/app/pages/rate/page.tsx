@@ -13,7 +13,7 @@ const RatePage: React.FC = () => {
   const [displayedResults, setDisplayedResults] = useState<any[]>([])
   const [selectedSchool, setSelectedSchool] = useState('')
   const [selectedCoach, setSelectedCoach] = useState('')
-  const [rating, setRating] = useState(0)
+  const [rating, setRating] = useState(1)
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -202,7 +202,7 @@ const RatePage: React.FC = () => {
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Rating
             </label>
-            <StarRating onRatingChange={setRating} initialRating={rating} />
+            <StarRating rating={rating} onRatingChange={setRating} />
           </div>
           
           <div>

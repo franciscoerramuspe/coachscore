@@ -6,36 +6,31 @@ import styled from '@emotion/styled';
 
 interface StarRatingProps {
   totalStars?: number;
-  initialRating?: number;
+  rating: number;
   onRatingChange?: (rating: number) => void;
   readOnly?: boolean;
 }
 
-const StyledRating = styled(Rating)`
-  & .MuiRating-icon {
-    color: white;
-  }
-  & .MuiRating-iconFilled {
-    color: #facc15;
-  }
-  & .MuiRating-iconHover {
-    color: #facc15;
-  }
-` as typeof Rating;
+const StyledRating = styled(Rating)({
+  '& .MuiRating-iconFilled': {
+    color: '#FBBF24',
+  },
+  '& .MuiRating-iconHover': {
+    color: '#F59E0B',
+  },
+});
 
 const StarRating: React.FC<StarRatingProps> = ({ 
   totalStars = 5, 
-  initialRating = 0, 
+  rating, 
   onRatingChange, 
   readOnly = false 
 }) => {
-  const [rating, setRating] = useState(initialRating);
-  const [hover, setHover] = useState(-1);
-
   const handleRatingChange = (event: React.SyntheticEvent, newValue: number | null) => {
     if (newValue !== null && !readOnly) {
-      setRating(newValue);
-      onRatingChange?.(newValue);
+      // Ensure the minimum rating is 1
+      const validRating = Math.max(1, newValue);
+      onRatingChange?.(validRating);
     }
   };
 
@@ -44,17 +39,14 @@ const StarRating: React.FC<StarRatingProps> = ({
       <StyledRating
         name="star-rating"
         value={rating}
-        precision={0.5}
+        precision={1}
         max={totalStars}
         onChange={handleRatingChange}
-        onChangeActive={(event, newHover) => {
-          if (!readOnly) setHover(newHover);
-        }}
         readOnly={readOnly}
       />
       {!readOnly && (
         <span className="ml-2 text-gray-300">
-          {(hover !== -1 ? hover : rating).toFixed(1)}
+          {rating.toFixed(0)}
         </span>
       )}
     </div>
