@@ -1,26 +1,25 @@
 .sliderContainer {
-    position: relative;
     overflow: hidden;
-    width: 100%;
-    background: transparent;
+    position: relative;
 }
 
 .slider {
     display: flex;
-    animation: slide 30s linear infinite;
+    animation: slide 20s linear infinite;
 }
 
 .slide {
     flex: 0 0 auto;
-    margin: 0 20px;
-    transition: opacity 0.3s ease;
+    width: 120px;
+    padding: 0 10px;
 }
 
 .slide img {
-    opacity: 0.7;
+    opacity: 1;
     transition: opacity 0.3s ease;
-    max-height: 80px; /* Ajusta este valor si es necesario */
+    max-height: 80px;
     width: auto;
+    filter: brightness(1.2) contrast(1.1);
 }
 
 @keyframes slide {
