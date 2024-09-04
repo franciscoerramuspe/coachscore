@@ -2,12 +2,22 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import StarRating from '../../../components/StarRating/page'
 import { FaGraduationCap, FaUserTie, FaSearch } from 'react-icons/fa'
+import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center p-4">
+    <Loader2 className="h-8 w-8 animate-spin text-yellow-400" />
+  </div>
+)
 
 const RatePage: React.FC = () => {
   const [searchType, setSearchType] = useState<'school' | 'coach'>('school')
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [displayedResults, setDisplayedResults] = useState<any[]>([])
@@ -21,14 +31,10 @@ const RatePage: React.FC = () => {
   const [error, setError] = useState('')
   const router = useRouter()
   const { userId } = useAuth()
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const resultsContainerRef = useRef<HTMLDivElement>(null)
 
-  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen)
-
-  const handleSearchTypeChange = (type: 'school' | 'coach') => {
-    setSearchType(type)
-    setIsDropdownOpen(false)
+  const handleSearchTypeChange = (value: string) => {
+    setSearchType(value as 'school' | 'coach')
     setSearchQuery('')
     setSearchResults([])
     setDisplayedResults([])
@@ -53,13 +59,12 @@ const RatePage: React.FC = () => {
         throw new Error(`Failed to fetch ${searchType}s`)
       }
       const data = await response.json()
-      console.log('API response:', data)
       if (Array.isArray(data.coaches) || Array.isArray(data.schools)) {
         const results = data.coaches || data.schools || []
         setSearchResults(results)
         setDisplayedResults(results)
       } else {
-        setError(`No se encontraron ${searchType}s`)
+        setError(`No ${searchType}s found`)
       }
     } catch (error) {
       console.error(`Error fetching ${searchType}s:`, error)
@@ -72,7 +77,7 @@ const RatePage: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       handleSearch()
-    }, 300) // Debounce de 300ms
+    }, 300)
 
     return () => clearTimeout(timer)
   }, [searchQuery, handleSearch])
@@ -119,117 +124,122 @@ const RatePage: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
-      <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">Rate a Coach</h1>
-      
-      <div className="bg-indigo-900 bg-opacity-50 rounded-lg p-6 shadow-lg">
-        <div className="flex items-center border-b border-gray-700 pb-2 mb-4">
-          <div className="relative">
-            <button 
-              onClick={toggleDropdown}
-              className="flex items-center bg-indigo-800 rounded-l-full px-4 py-2 text-gray-300 hover:bg-indigo-700 transition duration-300"
-            >
-              {searchType === 'school' ? <FaGraduationCap className="mr-2" /> : <FaUserTie className="mr-2" />}
-              {searchType === 'school' ? 'Schools' : 'Coaches'}
-              <span className="ml-2">▼</span>
-            </button>
-            {isDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-full bg-indigo-800 rounded-md shadow-lg overflow-hidden z-10">
-                <button 
-                  className="w-full text-left px-4 py-2 hover:bg-indigo-700 transition duration-300 flex items-center"
-                  onClick={() => handleSearchTypeChange('school')}
-                >
-                  <FaGraduationCap className="mr-2" /> Schools
-                </button>
-                <button 
-                  className="w-full text-left px-4 py-2 hover:bg-indigo-700 transition duration-300 flex items-center"
-                  onClick={() => handleSearchTypeChange('coach')}
-                >
-                  <FaUserTie className="mr-2" /> Coaches
-                </button>
-              </div>
-            )}
-          </div>
-          <input
-            type="text"
-            placeholder={`Search for a ${searchType}`}
-            className="flex-grow bg-transparent border-none focus:outline-none text-white placeholder-gray-400 px-4 py-2"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <button 
-            onClick={handleSearch}
-            className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-r-full transition duration-300"
-          >
-            <FaSearch />
-          </button>
-        </div>
-        
-        {isLoading && <p className="text-white">Loading...</p>}
-        {error && <p className="text-red-500">{error}</p>}
-        
-        <div ref={resultsContainerRef} className="mt-4 space-y-4 max-h-96 overflow-y-auto">
-          {displayedResults.map((result) => (
-            <div 
-              key={result.id || result.coachId || result.schoolId} 
-              className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300"
-              onClick={() => {
-                if (searchType === 'school') {
-                  setSelectedSchool(result.id || result.schoolId)
-                  setSearchType('coach')
-                  setSearchQuery('')
-                } else {
-                  setSelectedCoach(result.id || result.coachId)
-                }
-              }}
-            >
-              <h2 className="text-xl font-semibold text-white">
-                {searchType === 'coach' 
-                  ? `${result.coachFirstName} ${result.coachLastName}`
-                  : result.name
-                }
-              </h2>
-              {searchType === 'coach' && (
-                <p className="text-gray-300">{`School: ${result.schoolId}, Sport: ${result.sportId}`}</p>
-              )}
+      <Card className="bg-indigo-900 bg-opacity-50">
+        <CardHeader>
+          <CardTitle className="text-4xl font-bold text-center text-yellow-400">Rate a Coach</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <Select onValueChange={handleSearchTypeChange} defaultValue={searchType}>
+              <SelectTrigger className="w-[180px] bg-indigo-800 text-white border-none">
+                <SelectValue placeholder="Select search type" />
+              </SelectTrigger>
+              <SelectContent className="bg-indigo-800 text-white border-none">
+                <SelectItem value="school">
+                  <div className="flex items-center">
+                    <FaGraduationCap className="mr-2" />
+                    Schools
+                  </div>
+                </SelectItem>
+                <SelectItem value="coach">
+                  <div className="flex items-center">
+                    <FaUserTie className="mr-2" />
+                    Coaches
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex-grow relative">
+              <Input
+                type="text"
+                placeholder={`Search for a ${searchType}`}
+                className="w-full bg-transparent border-none focus:outline-none text-white placeholder-gray-400"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <Button 
+                onClick={handleSearch}
+                className="absolute right-0 top-0 bottom-0 bg-yellow-500 hover:bg-yellow-600 text-black"
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FaSearch />}
+              </Button>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+          
+          {isLoading ? (
+            <LoadingSpinner />
+          ) : error ? (
+            <p className="text-red-500 text-center">{error}</p>
+          ) : (
+            <div ref={resultsContainerRef} className="mt-4 space-y-4 max-h-96 overflow-y-auto">
+              {displayedResults.map((result) => (
+                <div 
+                  key={result.id || result.coachId || result.schoolId} 
+                  className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300"
+                  onClick={() => {
+                    if (searchType === 'school') {
+                      setSelectedSchool(result.id || result.schoolId)
+                      setSearchType('coach')
+                      setSearchQuery('')
+                    } else {
+                      setSelectedCoach(result.id || result.coachId)
+                    }
+                  }}
+                >
+                  <h2 className="text-xl font-semibold text-white">
+                    {searchType === 'coach' 
+                      ? `${result.coachFirstName} ${result.coachLastName}`
+                      : result.name
+                    }
+                  </h2>
+                  {searchType === 'coach' && (
+                    <p className="text-gray-300">{`School: ${result.schoolId}, Sport: ${result.sportId}`}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
-      {selectedCoach && (
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Rating
-            </label>
-            <StarRating rating={rating} onRatingChange={setRating} />
-          </div>
-          
-          <div>
-            <label htmlFor="comment" className="block text-sm font-medium text-gray-300 mb-1">
-              Comment
-            </label>
-            <textarea
-              id="comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-2 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-600"
-              required
-            ></textarea>
-          </div>
-          
-          {submitError && <p className="text-red-500">{submitError}</p>}
-          
-          <button
-            type="submit"
-            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-3 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Review'}
-          </button>
-        </form>
-      )}
+          {selectedCoach && (
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Rating
+                </label>
+                <StarRating rating={rating} onRatingChange={setRating} />
+              </div>
+              
+              <div>
+                <label htmlFor="comment" className="block text-sm font-medium text-gray-300 mb-1">
+                  Comment
+                </label>
+                <textarea
+                  id="comment"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-2 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  required
+                ></textarea>
+              </div>
+              
+              {submitError && <p className="text-red-500">{submitError}</p>}
+              
+              <Button
+                type="submit"
+                className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-bold"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {isSubmitting ? 'Submitting...' : 'Submit Review'}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
