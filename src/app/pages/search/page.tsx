@@ -1,4 +1,5 @@
 'use client'
+
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { FaGraduationCap, FaUserTie, FaSearch, FaPlus } from 'react-icons/fa'
 import { Loader2 } from 'lucide-react'
@@ -8,17 +9,34 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+interface School {
+  schoolId: string;
+  name: string;
+}
+
+interface Coach {
+  coachId: string;
+  coachFirstName: string;
+  coachLastName: string;
+  schoolId: string;
+  schoolName: string;
+  sportId: string;
+  sportName: string;
+}
+
+type SearchResult = School | Coach;
+
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center p-4">
-    <Loader2 className="h-8 w-8 animate-spin text-yellow-400" />
+    <Loader2 className="h-8 w-4 animate-spin text-yellow-400" />
   </div>
 )
 
 const SearchPage: React.FC = () => {
   const [searchType, setSearchType] = useState<'school' | 'coach'>('coach')
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
-  const [displayedResults, setDisplayedResults] = useState<any[]>([])
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [displayedResults, setDisplayedResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const resultsContainerRef = useRef<HTMLDivElement>(null)
@@ -42,13 +60,15 @@ const SearchPage: React.FC = () => {
 
     try {
       const endpoint = searchType === 'school' ? '/api/schools/search' : '/api/coaches/search'
-      const response = await fetch(`${endpoint}?q=${searchQuery}&limit=5&offset=0`)
+      const response = await fetch(`${endpoint}?q=${encodeURIComponent(searchQuery)}&limit=5&offset=0`)
+      console.log('Response status:', response.status);
       if (!response.ok) {
         throw new Error(`Failed to fetch ${searchType}s`)
       }
       const data = await response.json()
-      if (Array.isArray(data.coaches) || Array.isArray(data.schools)) {
-        const results = data.coaches || data.schools || []
+      console.log('Data received:', data);
+      if (Array.isArray(data.coachesWithNames) || Array.isArray(data.schools)) {
+        const results = data.coachesWithNames || data.schools || []
         setSearchResults(results)
         setDisplayedResults(results)
       } else {
@@ -76,7 +96,7 @@ const SearchPage: React.FC = () => {
     setIsLoading(true)
     try {
       const endpoint = searchType === 'school' ? '/api/schools/search' : '/api/coaches/search'
-      const response = await fetch(`${endpoint}?q=${searchQuery}&limit=5&offset=${displayedResults.length}`)
+      const response = await fetch(`${endpoint}?q=${encodeURIComponent(searchQuery)}&limit=5&offset=${displayedResults.length}`)
       if (!response.ok) {
         throw new Error(`Failed to fetch more ${searchType}s`)
       }
@@ -159,7 +179,7 @@ const SearchPage: React.FC = () => {
             </div>
           </div>
           
-          {isLoading ? (
+          {isLoading && displayedResults.length === 0 ? (
             <LoadingSpinner />
           ) : error ? (
             <p className="text-red-500 text-center">{error}</p>
@@ -171,16 +191,23 @@ const SearchPage: React.FC = () => {
                   className="mt-6 space-y-4 max-h-96 overflow-y-auto"
                 >
                   {displayedResults.map((result) => (
-                    <Link key={result.coachId || result.schoolId} href={`/pages/${searchType}/${result.coachId || result.schoolId}`}>
-                      <div className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300">
+                    <Link 
+                      key={'coachId' in result ? result.coachId : result.schoolId} 
+                      href={`/pages/${searchType}/${'coachId' in result ? result.coachId : result.schoolId}`}
+                      className="block mb-4"
+                    >
+                      <div className="bg-indigo-800 bg-opacity-50 p-6 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300 border border-indigo-600">
                         <h2 className="text-xl font-semibold text-white">
-                          {searchType === 'coach' 
+                          {searchType === 'coach' && 'coachFirstName' in result
                             ? `${result.coachFirstName} ${result.coachLastName}`
-                            : result.name
+                            : ('name' in result ? result.name : 'Unknown')
                           }
                         </h2>
-                        {searchType === 'coach' && (
-                          <p className="text-gray-300">{`School: ${result.schoolId}, Sport: ${result.sportId}`}</p>
+                        {searchType === 'coach' && 'schoolId' in result && 'sportId' in result && (
+                          <p className="text-gray-300">
+                            School: {result.schoolName || 'Unknown'}, 
+                            Sport: {result.sportName || 'Unknown'}
+                          </p>
                         )}
                       </div>
                     </Link>

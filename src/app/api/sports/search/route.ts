@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connect } from '@/lib/db';
-import School from '@/models/School';
+import Sport from '@/models/Sport';
 
 export async function GET(req: Request) {
   try {
@@ -17,20 +17,20 @@ export async function GET(req: Request) {
       );
     }
 
-    const schools = await School.find({
+    const sports = await Sport.find({
       name: { $regex: query, $options: 'i' },
     })
       .skip(offset)
       .limit(limit)
-      .select('schoolId name logo');
+      .select('sportId name');
 
-    const total = await School.countDocuments({
+    const total = await Sport.countDocuments({
       name: { $regex: query, $options: 'i' },
     });
 
-    return NextResponse.json({ schools: schools, total });
+    return NextResponse.json({ sports, total });
   } catch (error) {
-    console.error('Error searching schools:', error);
+    console.error('Error searching sports:', error);
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }

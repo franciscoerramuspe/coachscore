@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 export async function GET(req: Request) {
   try {
     await connect();
-    const sports = await Sport.find();
+    const sports = await Sport.find().select('sportId name');
     return NextResponse.json(sports);
   } catch (error) {
     console.error('Error fetching sports:', error);

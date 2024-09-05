@@ -1,14 +1,23 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import StarRating from '../../../components/StarRating/page'
-import { FaGraduationCap, FaUserTie, FaSearch } from 'react-icons/fa'
+import { FaUserTie, FaSearch } from 'react-icons/fa'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+interface Coach {
+  coachId: string;
+  coachFirstName: string;
+  coachLastName: string;
+  schoolId: string;
+  schoolName: string;
+  sportId: string;
+  sportName: string;
+}
 
 const LoadingSpinner = () => (
   <div className="flex justify-center items-center p-4">
@@ -17,11 +26,8 @@ const LoadingSpinner = () => (
 )
 
 const RatePage: React.FC = () => {
-  const [searchType, setSearchType] = useState<'school' | 'coach'>('school')
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<any[]>([])
-  const [displayedResults, setDisplayedResults] = useState<any[]>([])
-  const [selectedSchool, setSelectedSchool] = useState('')
+  const [searchResults, setSearchResults] = useState<Coach[]>([])
   const [selectedCoach, setSelectedCoach] = useState('')
   const [rating, setRating] = useState(1)
   const [comment, setComment] = useState('')
@@ -33,19 +39,9 @@ const RatePage: React.FC = () => {
   const { userId } = useAuth()
   const resultsContainerRef = useRef<HTMLDivElement>(null)
 
-  const handleSearchTypeChange = (value: string) => {
-    setSearchType(value as 'school' | 'coach')
-    setSearchQuery('')
-    setSearchResults([])
-    setDisplayedResults([])
-    setSelectedSchool('')
-    setSelectedCoach('')
-  }
-
   const handleSearch = useCallback(async () => {
     if (searchQuery.length === 0) {
       setSearchResults([])
-      setDisplayedResults([])
       return
     }
 
@@ -53,26 +49,25 @@ const RatePage: React.FC = () => {
     setError('')
 
     try {
-      const endpoint = searchType === 'school' ? '/api/schools/search' : '/api/coaches/search'
-      const response = await fetch(`${endpoint}?q=${searchQuery}&limit=5&offset=0`)
+      const response = await fetch(`/api/coaches/search?q=${encodeURIComponent(searchQuery)}&limit=5&offset=0`)
+      console.log('Response status:', response.status);
       if (!response.ok) {
-        throw new Error(`Failed to fetch ${searchType}s`)
+        throw new Error('Failed to fetch coaches')
       }
       const data = await response.json()
-      if (Array.isArray(data.coaches) || Array.isArray(data.schools)) {
-        const results = data.coaches || data.schools || []
-        setSearchResults(results)
-        setDisplayedResults(results)
+      console.log('Data received:', data);
+      if (Array.isArray(data.coachesWithNames)) {
+        setSearchResults(data.coachesWithNames)
       } else {
-        setError(`No ${searchType}s found`)
+        setError('No coaches found')
       }
     } catch (error) {
-      console.error(`Error fetching ${searchType}s:`, error)
-      setError(`Failed to fetch ${searchType}s. Please try again.`)
+      console.error('Error fetching coaches:', error)
+      setError('Failed to fetch coaches. Please try again.')
     } finally {
       setIsLoading(false)
     }
-  }, [searchType, searchQuery])
+  }, [searchQuery])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -130,29 +125,10 @@ const RatePage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-2 mb-4">
-            <Select onValueChange={handleSearchTypeChange} defaultValue={searchType}>
-              <SelectTrigger className="w-[180px] bg-indigo-800 text-white border-none">
-                <SelectValue placeholder="Select search type" />
-              </SelectTrigger>
-              <SelectContent className="bg-indigo-800 text-white border-none">
-                <SelectItem value="school">
-                  <div className="flex items-center">
-                    <FaGraduationCap className="mr-2" />
-                    Schools
-                  </div>
-                </SelectItem>
-                <SelectItem value="coach">
-                  <div className="flex items-center">
-                    <FaUserTie className="mr-2" />
-                    Coaches
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
             <div className="flex-grow relative">
               <Input
                 type="text"
-                placeholder={`Search for a ${searchType}`}
+                placeholder="Search for a coach"
                 className="w-full bg-transparent border-none focus:outline-none text-white placeholder-gray-400"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -173,29 +149,19 @@ const RatePage: React.FC = () => {
             <p className="text-red-500 text-center">{error}</p>
           ) : (
             <div ref={resultsContainerRef} className="mt-4 space-y-4 max-h-96 overflow-y-auto">
-              {displayedResults.map((result) => (
+              {searchResults.map((coach) => (
                 <div 
-                  key={result.id || result.coachId || result.schoolId} 
+                  key={coach.coachId}
                   className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300"
-                  onClick={() => {
-                    if (searchType === 'school') {
-                      setSelectedSchool(result.id || result.schoolId)
-                      setSearchType('coach')
-                      setSearchQuery('')
-                    } else {
-                      setSelectedCoach(result.id || result.coachId)
-                    }
-                  }}
+                  onClick={() => setSelectedCoach(coach.coachId)}
                 >
                   <h2 className="text-xl font-semibold text-white">
-                    {searchType === 'coach' 
-                      ? `${result.coachFirstName} ${result.coachLastName}`
-                      : result.name
-                    }
+                    {`${coach.coachFirstName} ${coach.coachLastName}`}
                   </h2>
-                  {searchType === 'coach' && (
-                    <p className="text-gray-300">{`School: ${result.schoolId}, Sport: ${result.sportId}`}</p>
-                  )}
+                  <p className="text-gray-300">
+                    School: {coach.schoolName || 'Unknown'}, 
+                    Sport: {coach.sportName || 'Unknown'}
+                  </p>
                 </div>
               ))}
             </div>
