@@ -15,7 +15,7 @@ const Header: React.FC = async () => {
     <header className="bg-indigo-950 bg-opacity-70 text-white py-4 px-6 shadow-lg">
     <div className="container mx-auto flex justify-between items-center">
       <Link href="/" className={`text-2xl font-bold text-yellow-400 hover:text-yellow-300 transition duration-300 ${font.className}`}>
-        Rate My Coach
+        Coach Score
       </Link>
       
       <nav>

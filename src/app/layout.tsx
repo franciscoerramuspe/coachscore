@@ -17,7 +17,7 @@ const connectToDatabase = async () => {
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Rate My Coach",
+  title: "Coach Score",
   description: "Rate and review college coaches",
 };
 

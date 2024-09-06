@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { FaGraduationCap, FaUserTie, FaSearch, FaPlus } from 'react-icons/fa'
 import { Loader2 } from 'lucide-react'

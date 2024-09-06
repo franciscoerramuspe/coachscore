@@ -15,8 +15,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Rate My Coach - Anonymous Reviews for College Coaches</title>
-        <meta name="description" content="Rate My Coach provides a platform for student-athletes to anonymously discover, rate, and review college coaches, ensuring honest feedback for informed decisions." />
+        <title>Coach Score - Anonymous Reviews for College Coaches</title>
+        <meta name="description" content="Coach Score provides a platform for student-athletes to anonymously discover, rate, and review college coaches, ensuring honest feedback for informed decisions." />
       </Head>
       <main className='min-h-screen flex flex-col overflow-hidden'>
         <div className='flex-grow flex flex-col justify-center items-center p-4 md:p-8' style={{ minHeight: '70vh' }}>
@@ -25,7 +25,7 @@ export default function Home() {
               'text-4xl sm:text-5xl lg:text-7xl font-bold text-yellow-400 mb-6',
               font.className
             )}>
-              Rate My Coach
+              Coach Score
             </h1>
             <div className="bg-indigo-800 text-white py-2 px-4 rounded-full inline-block mb-6">
               <FaUserSecret className="inline-block mr-2" aria-hidden="true" />
