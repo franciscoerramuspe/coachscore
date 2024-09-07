@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Header from "../components/Header/page"
 import { connect } from '@/lib/db';
+import { Toaster } from "@/components/ui/toaster"
 
 // Función para conectar a la base de datos
 const connectToDatabase = async () => {
@@ -34,6 +35,7 @@ export default async function RootLayout({
       <body className={`${inter.className} bg-gradient-to-br from-indigo-950 via-blue-950 to-blue-900 min-h-screen`}>
           <Header />
           {children}
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

@@ -32,6 +32,11 @@ const Header: React.FC = async () => {
                   Rate
                 </Link>
               </li>
+              <li>
+                <Link href="/pages/my-reviews" className="text-blue-300 hover:text-blue-200 transition duration-300">
+                  My Reviews
+                </Link>
+              </li>
             </>
           )}
           <li>
