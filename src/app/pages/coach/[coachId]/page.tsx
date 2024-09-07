@@ -79,6 +79,8 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
     fetchCoachDetails()
   }, [fetchCoachDetails])
 
+  const MAX_COMMENT_LENGTH = 1200;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitError('')
@@ -95,10 +97,24 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
       setSubmitError('Please provide a comment for your review')
       return
     }
+    if (comment.length > MAX_COMMENT_LENGTH) {
+      setSubmitError(`Your review is too long. Please limit it to ${MAX_COMMENT_LENGTH} characters.`)
+      return
+    }
 
     setIsSubmitting(true)
 
     try {
+      // Check if the user has already reviewed this coach
+      const checkResponse = await fetch(`/api/reviews?coachId=${params.coachId}&userId=${userId}`)
+      const checkData = await checkResponse.json()
+
+      if (checkData.hasReviewed) {
+        setSubmitError('You have already submitted a review for this coach')
+        setIsSubmitting(false)
+        return
+      }
+
       const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: {
@@ -113,12 +129,13 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        if (errorData.errors) {
-          const errorMessages = errorData.errors.join('. ')
-          throw new Error(errorMessages)
-        } else {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const errorData = await response.json()
           throw new Error(errorData.message || 'Error submitting review')
+        } else {
+          const errorText = await response.text()
+          throw new Error(`Server error: ${response.status} ${response.statusText}. ${errorText}`)
         }
       }
 
@@ -127,6 +144,7 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
       setShowAlert(true)
       await fetchCoachDetails()
     } catch (err) {
+      console.error('Error submitting review:', err)
       setSubmitError(err instanceof Error ? err.message : 'An error occurred while submitting the review')
     } finally {
       setIsSubmitting(false)
@@ -196,13 +214,19 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
           </div>
           <div>
             <label htmlFor="comment" className="block text-yellow-400 mb-2 font-semibold">Comment</label>
-            <textarea
-              id="comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              rows={4}
-            ></textarea>
+            <div>
+              <textarea
+                id="comment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="w-full px-3 py-2 bg-indigo-800 text-white border border-indigo-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                rows={4}
+                maxLength={MAX_COMMENT_LENGTH}
+              ></textarea>
+              <p className="text-sm text-gray-400 mt-1">
+                {comment.length}/{MAX_COMMENT_LENGTH} characters
+              </p>
+            </div>
           </div>
           {submitError && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
