@@ -23,9 +23,20 @@ export const GET = async () => {
 };
 
 export const POST = async (req: NextRequest) => {
+  console.log('POST request received for user creation');
   try {
+    console.log('Attempting to connect to database');
     await connect();
+    console.log('Database connection successful');
+
     const { clerkId, email, photoUrl, firstName, lastName } = await req.json();
+    console.log('Received user data:', {
+      clerkId,
+      email,
+      photoUrl,
+      firstName,
+      lastName,
+    });
 
     const users = await userModel.create({
       clerkId,
@@ -34,6 +45,7 @@ export const POST = async (req: NextRequest) => {
       firstName,
       lastName,
     });
+    console.log('User created successfully:', users);
 
     return NextResponse.json({
       message: 'success from POST',
@@ -41,10 +53,11 @@ export const POST = async (req: NextRequest) => {
       data: users,
     });
   } catch (error) {
+    console.error('Error creating user:', error);
     return NextResponse.json({
-      message: 'Errror from POST',
-      status: 404,
-      data: error,
+      message: 'Error from POST',
+      status: 500,
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 };

@@ -1,13 +1,17 @@
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import StarRating from '../../../components/StarRating/page'
-import { FaUserTie, FaSearch } from 'react-icons/fa'
+import { FaUserTie, FaSearch, FaPlus } from 'react-icons/fa'
 import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from 'next/link'
+import { CheckCircledIcon } from "@radix-ui/react-icons"
+import { useToast } from "@/components/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 
 interface Coach {
   coachId: string;
@@ -26,6 +30,7 @@ const LoadingSpinner = () => (
 )
 
 const RatePage: React.FC = () => {
+  const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Coach[]>([])
   const [selectedCoach, setSelectedCoach] = useState('')
@@ -50,15 +55,14 @@ const RatePage: React.FC = () => {
 
     try {
       const response = await fetch(`/api/coaches/search?q=${encodeURIComponent(searchQuery)}&limit=5&offset=0`)
-      console.log('Response status:', response.status);
       if (!response.ok) {
         throw new Error('Failed to fetch coaches')
       }
       const data = await response.json()
-      console.log('Data received:', data);
       if (Array.isArray(data.coachesWithNames)) {
         setSearchResults(data.coachesWithNames)
       } else {
+        setSearchResults([])
         setError('No coaches found')
       }
     } catch (error) {
@@ -109,9 +113,19 @@ const RatePage: React.FC = () => {
       }
 
       const data = await response.json()
+      toast({
+        title: "Review submitted",
+        description: "Your review has been successfully submitted.",
+        variant: "default",
+      })
       router.push(`/pages/coach/${selectedCoach}`)
-    } catch (err) {
-      setSubmitError('An error occurred while submitting the review. Please try again.')
+    } catch (error) {
+      console.error(error)
+      toast({
+        title: "Error",
+        description: "Failed to submit review. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -146,13 +160,22 @@ const RatePage: React.FC = () => {
           {isLoading ? (
             <LoadingSpinner />
           ) : error ? (
-            <p className="text-red-500 text-center">{error}</p>
+            <div className="text-center">
+              <p className="text-red-500 mb-4">{error}</p>
+              <Link href="/pages/add-coach" passHref>
+                <Button className="bg-yellow-500 hover:bg-yellow-600 text-black">
+                  <FaPlus className="mr-2" /> Add a New Coach
+                </Button>
+              </Link>
+            </div>
           ) : (
             <div ref={resultsContainerRef} className="mt-4 space-y-4 max-h-96 overflow-y-auto">
               {searchResults.map((coach) => (
                 <div 
                   key={coach.coachId}
-                  className="bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300"
+                  className={`bg-indigo-800 bg-opacity-50 p-4 rounded-lg shadow cursor-pointer transition duration-300 ${
+                    selectedCoach === coach.coachId ? 'border-2 border-yellow-400' : 'hover:bg-indigo-700'
+                  }`}
                   onClick={() => setSelectedCoach(coach.coachId)}
                 >
                   <h2 className="text-xl font-semibold text-white">
@@ -162,8 +185,41 @@ const RatePage: React.FC = () => {
                     School: {coach.schoolName || 'Unknown'}, 
                     Sport: {coach.sportName || 'Unknown'}
                   </p>
+                  {selectedCoach === coach.coachId && (
+                    <div className="mt-2 text-yellow-400 flex items-center">
+                      <CheckCircledIcon className="mr-2" />
+                      Selected for review
+                    </div>
+                  )}
                 </div>
               ))}
+              {searchResults.length === 0 && searchQuery.length > 0 && !error && (
+                <div className="text-center">
+                  <p className="text-white mb-4">No coaches found. Would you like to add a new coach?</p>
+                  <Link href="/pages/add-coach" passHref>
+                    <Button className="bg-yellow-500 hover:bg-yellow-600 text-black">
+                      <FaPlus className="mr-2" /> Add a New Coach
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedCoach && (
+            <div className="mt-8 mb-4 p-4 bg-indigo-700 rounded-lg">
+              <h3 className="text-xl font-semibold text-white mb-2">Selected Coach:</h3>
+              {searchResults.find(coach => coach.coachId === selectedCoach) && (
+                <>
+                  <p className="text-lg text-yellow-400">
+                    {searchResults.find(coach => coach.coachId === selectedCoach)?.coachFirstName} {searchResults.find(coach => coach.coachId === selectedCoach)?.coachLastName}
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    School: {searchResults.find(coach => coach.coachId === selectedCoach)?.schoolName}, 
+                    Sport: {searchResults.find(coach => coach.coachId === selectedCoach)?.sportName}
+                  </p>
+                </>
+              )}
             </div>
           )}
 

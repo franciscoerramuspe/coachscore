@@ -4,6 +4,7 @@ import StarRating from '@/components/StarRating/page'
 import { useAuth } from '@clerk/nextjs'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { CheckCircledIcon } from "@radix-ui/react-icons"
+import { Loader2 } from 'lucide-react'
 
 interface Review {
   reviewId: string
@@ -161,7 +162,11 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
     }
   }, [showAlert])
 
-  if (isLoading) return <div className="text-center text-white">Loading...</div>
+  if (isLoading) return (
+    <div className="flex justify-center items-center h-screen bg-indigo-950">
+      <Loader2 className="h-12 w-12 animate-spin text-yellow-400" />
+    </div>
+  )
   if (error) return <div className="text-center text-red-500">{error}</div>
   if (!coach) return <div className="text-center text-white">Coach not found</div>
 
@@ -239,7 +244,14 @@ export default function CoachPage({ params }: { params: { coachId: string } }) {
             className="bg-yellow-400 hover:bg-yellow-500 text-indigo-900 font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Review'}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="inline-block mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              'Submit Review'
+            )}
           </button>
         </form>
       </div>
