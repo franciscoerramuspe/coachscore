@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { connect } from '@/lib/db';
 import Coach from '@/models/Coach';
 import Review from '@/models/Review';
+import Vote from '@/models/Vote';
 
 export async function GET(
   req: Request,
@@ -11,6 +12,10 @@ export async function GET(
     await connect();
     const { coachId } = params;
 
+    // Get userId from query parameter
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+
     const coach = await Coach.findOne({ coachId }).lean();
 
     if (!coach) {
@@ -19,6 +24,18 @@ export async function GET(
 
     const reviews = await Review.find({ coachId }).lean();
 
+    let userVotes: { [reviewId: string]: 'like' | 'dislike' } = {};
+    if (userId) {
+      const votes = await Vote.find({
+        userId,
+        reviewId: { $in: reviews.map((r) => r.reviewId) },
+      }).lean();
+      userVotes = votes.reduce((acc, vote) => {
+        acc[vote.reviewId] = vote.vote;
+        return acc;
+      }, {} as { [reviewId: string]: 'like' | 'dislike' });
+    }
+
     const coachWithReviews = {
       ...coach,
       ratings: reviews.map((review) => ({
@@ -26,6 +43,9 @@ export async function GET(
         rating: review.rating,
         comment: review.comment,
         createdAt: review.createdAt,
+        likes: review.likes || 0,
+        dislikes: review.dislikes || 0,
+        userVote: userVotes[review.reviewId] || null,
       })),
     };
 

@@ -9,6 +9,8 @@ const ReviewSchema = new mongoose.Schema({
   reviewerId: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
+  likes: { type: Number, default: 0 },
+  dislikes: { type: Number, default: 0 },
 });
 
 export default mongoose.models.Review || mongoose.model('Review', ReviewSchema);
