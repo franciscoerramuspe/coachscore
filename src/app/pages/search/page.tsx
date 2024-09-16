@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Image from 'next/image'
 
 interface School {
   schoolId: string;
   name: string;
+  logo?: string;
 }
 
 interface Coach {
@@ -198,12 +200,23 @@ const SearchPage: React.FC = () => {
                       className="block mb-4"
                     >
                       <div className="bg-indigo-800 bg-opacity-50 p-6 rounded-lg shadow cursor-pointer hover:bg-indigo-700 transition duration-300 border border-indigo-600">
-                        <h2 className="text-xl font-semibold text-white">
-                          {searchType === 'coach' && 'coachFirstName' in result
-                            ? `${result.coachFirstName} ${result.coachLastName}`
-                            : ('name' in result ? result.name : 'Unknown')
-                          }
-                        </h2>
+                        <div className="flex justify-between items-center">
+                          <h2 className="text-xl font-semibold text-white">
+                            {searchType === 'coach' && 'coachFirstName' in result
+                              ? `${result.coachFirstName} ${result.coachLastName}`
+                              : ('name' in result ? result.name : 'Unknown')
+                            }
+                          </h2>
+                          {'logo' in result && result.logo && (
+                            <Image 
+                              src={result.logo}
+                              alt={`${'name' in result ? result.name : 'Coach'} logo`}
+                              width={40}
+                              height={40}
+                              className="object-contain"
+                            />
+                          )}
+                        </div>
                         {searchType === 'coach' && 'schoolId' in result && 'sportId' in result && (
                           <p className="text-gray-300">
                             School: {result.schoolName || 'Unknown'}, 

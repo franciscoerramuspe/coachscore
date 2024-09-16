@@ -2,19 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import Header from "../components/Header/page"
+import Header from "../components/Header/page";
 import { connect } from '@/lib/db';
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
 
-// Función para conectar a la base de datos
-const connectToDatabase = async () => {
-  try {
-    await connect();
-    console.log('Conexión a MongoDB establecida correctamente');
-  } catch (error) {
-    console.error('Error al conectar a MongoDB:', error);
-  }
-};
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -22,13 +13,18 @@ export const metadata: Metadata = {
   description: "Rate and review college coaches",
 };
 
-export default async function RootLayout({
+// Initiate database connection at module level
+connect().then(() => {
+  console.log('Connected to MongoDB');
+}).catch((error) => {
+  console.error('MongoDB connection error:', error);
+});
+
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  await connectToDatabase(); // Conecta a la base de datos al iniciar la aplicación
-
   return (
     <ClerkProvider>
       <html lang="en">
