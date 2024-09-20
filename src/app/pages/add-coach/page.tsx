@@ -125,22 +125,21 @@ const AddCoachPage: React.FC = () => {
     return () => clearTimeout(timer)
   }, [sportQuery, handleSportSearch])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setValidationError('')
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
 
     if (!coachFirstName || !coachLastName || !selectedSchool || !selectedSport) {
-      setValidationError('All fields are required')
-      return
+      setValidationError('All fields are required');
+      return;
     }
 
-    setIsModalOpen(true)
+    setIsModalOpen(true);
   }
 
   const confirmAddCoach = async () => {
-    setIsModalOpen(false)
-    setIsSubmitting(true)
+    setIsModalOpen(false);
+    setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/coaches', {
@@ -154,17 +153,17 @@ const AddCoachPage: React.FC = () => {
           school: selectedSchool?.schoolId, 
           sport: selectedSport?.sportId 
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to add coach')
+        throw new Error('Failed to add coach');
       }
 
-      const data = await response.json()
-      router.push(`/pages/coach/${data.coachId}`)
+      const data = await response.json();
+      router.push(`/pages/coach/${data.coachId}`);
     } catch (err) {
-      setError('An error occurred while adding the coach. Please try again.')
-      setIsSubmitting(false)
+      setError('An error occurred while adding the coach. Please try again.');
+      setIsSubmitting(false);
     }
   }
 

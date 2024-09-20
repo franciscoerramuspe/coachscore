@@ -10,7 +10,7 @@ const font = Poppins({
 });
 
 const Header: React.FC = () => {
-  const { userId } = useUser();
+  const user = useUser();
 
   return (
     <header className="bg-indigo-950 bg-opacity-70 text-white py-4 px-6 shadow-lg">
@@ -25,7 +25,7 @@ const Header: React.FC = () => {
         <div className="flex items-center space-x-6">
           <nav>
             <ul className="flex space-x-6 items-center">
-              {userId !== null && (
+              {user.isLoaded && user.isSignedIn && (
                 <>
                   <li>
                     <Link href="/pages/search" className="text-blue-300 hover:text-blue-200 transition duration-300">
@@ -49,7 +49,7 @@ const Header: React.FC = () => {
                   </li>
                 </>
               )}
-              {userId === null ? (
+              {!user.isLoaded || !user.isSignedIn ? (
                 <li>
                   <Link href="/sign-in">
                     <button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105">
@@ -62,7 +62,7 @@ const Header: React.FC = () => {
           </nav>
           
           {/* User Photo */}
-          {userId !== null && (
+          {user.user?.id !== null && (
             <UserButton 
               appearance={{
                 elements: {
