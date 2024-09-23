@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Coach {
-  id: string;
+  coachId: string;
   coachFirstName: string;
   coachLastName: string;
   sportName: string;
@@ -123,7 +123,7 @@ export default function SchoolPage() {
           {filteredCoaches.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredCoaches.map((coach) => (
-                <Link key={coach.id} href={`/pages/coach/${coach.id}`}>
+                <Link key={coach.coachId} href={`/pages/coach/${coach.coachId}`}>
                   <Card className="bg-indigo-800 hover:bg-indigo-700 transition-colors cursor-pointer h-full">
                     <CardContent className="p-4 flex flex-col justify-between h-full">
                       <div>
