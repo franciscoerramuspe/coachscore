@@ -37,7 +37,14 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     await connect();
-    const { coachId, rating, comment, reviewerId } = await req.json();
+    const {
+      coachId,
+      sportKnowledgeRating,
+      managementSkillsRating,
+      likabilityRating,
+      comment,
+      reviewerId,
+    } = await req.json();
 
     const coach = await Coach.findOne({ coachId });
     if (!coach) {
@@ -53,11 +60,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // Calculate overall rating
+    const overallRating =
+      (sportKnowledgeRating + managementSkillsRating + likabilityRating) / 3;
+
     const newReview = new Review({
       reviewId: uuidv4(),
       schoolId: coach.schoolId,
       coachId: coach.coachId,
-      rating,
+      sportKnowledgeRating,
+      managementSkillsRating,
+      likabilityRating,
+      overallRating,
       comment,
       reviewerId,
     });
