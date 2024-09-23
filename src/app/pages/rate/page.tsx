@@ -34,7 +34,9 @@ const RatePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Coach[]>([])
   const [selectedCoach, setSelectedCoach] = useState('')
-  const [rating, setRating] = useState(1)
+  const [sportKnowledgeRating, setSportKnowledgeRating] = useState(1)
+  const [managementSkillsRating, setManagementSkillsRating] = useState(1)
+  const [likabilityRating, setLikabilityRating] = useState(1)
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -83,18 +85,45 @@ const RatePage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError('')
+
     if (!userId) {
       setSubmitError('You must be logged in to submit a review')
       return
     }
-    if (!selectedCoach || rating === 0) {
-      setSubmitError('Please select a coach and provide a rating')
+    if (
+      sportKnowledgeRating < 1 ||
+      managementSkillsRating < 1 ||
+      likabilityRating < 1
+    ) {
+      setSubmitError('Please provide a rating of at least 1 star for all categories')
       return
     }
+    if (!comment.trim()) {
+      setSubmitError('Please provide a comment for your review')
+      return
+    }
+    if (comment.length > 1200) {
+      setSubmitError(
+        `Your review is too long. Please limit it to 1200 characters.`
+      )
+      return
+    }
+
     setIsSubmitting(true)
-    setSubmitError('')
 
     try {
+      const checkResponse = await fetch(
+        `/api/reviews?coachId=${selectedCoach}&userId=${userId}`
+      )
+      const checkData = await checkResponse.json()
+
+      if (checkData.hasReviewed) {
+        setSubmitError('You have already submitted a review for this coach')
+        setIsSubmitting(false)
+        return
+      }
+
       const response = await fetch('/api/reviews', {
         method: 'POST',
         headers: {
@@ -102,17 +131,19 @@ const RatePage: React.FC = () => {
         },
         body: JSON.stringify({
           coachId: selectedCoach,
-          rating,
+          sportKnowledgeRating,
+          managementSkillsRating,
+          likabilityRating,
           comment,
-          reviewerId: userId
+          reviewerId: userId,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to submit review')
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Error submitting review')
       }
 
-      const data = await response.json()
       toast({
         title: "Review submitted",
         description: "Your review has been successfully submitted.",
@@ -227,9 +258,23 @@ const RatePage: React.FC = () => {
             <form onSubmit={handleSubmit} className="mt-8 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Rating
+                  Sport Knowledge
                 </label>
-                <StarRating rating={rating} onRatingChange={setRating} />
+                <StarRating rating={sportKnowledgeRating} onRatingChange={setSportKnowledgeRating} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Management Skills
+                </label>
+                <StarRating rating={managementSkillsRating} onRatingChange={setManagementSkillsRating} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Likability/Personality
+                </label>
+                <StarRating rating={likabilityRating} onRatingChange={setLikabilityRating} />
               </div>
               
               <div>

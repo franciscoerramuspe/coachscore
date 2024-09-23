@@ -40,7 +40,10 @@ export async function GET(
       ...coach,
       ratings: reviews.map((review) => ({
         reviewId: review.reviewId,
-        rating: review.rating,
+        sportKnowledgeRating: review.sportKnowledgeRating,
+        managementSkillsRating: review.managementSkillsRating,
+        likabilityRating: review.likabilityRating,
+        overallRating: review.overallRating,
         comment: review.comment,
         createdAt: review.createdAt,
         likes: review.likes || 0,
